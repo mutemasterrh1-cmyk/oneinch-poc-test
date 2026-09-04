@@ -1,0 +1,16 @@
+<!doctype html><meta charset=utf-8>
+<body style="background:#fff;font-family:monospace;font-size:18px;padding:1rem">
+<div id=r>loading...</div>
+<script>
+var out={hash:location.hash,origin:location.origin,
+  ethereum:typeof window.ethereum,
+  solana:typeof window.solana,
+  androidShare:typeof window.AndroidShareHandler,
+  oneinchProvider:typeof window.oneInchWalletProvider,
+  web:typeof window.web,
+  postMsgs:0};
+window.addEventListener('message',function(){out.postMsgs++;},false);
+document.getElementById('r').textContent=JSON.stringify(out);
+document.title='PROBE '+JSON.stringify(out);
+</script>
+</body>

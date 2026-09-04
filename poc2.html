@@ -29,18 +29,19 @@ function installHook() {
     var orig = w.executeCallback ? w.executeCallback.bind(w) : null;
     var hook = function(id, result) {
         try {
-            var parsed = JSON.parse(result);
+            var parsed = (typeof result === 'string') ? JSON.parse(result) : result;
             var status = parsed.error ? ('<span class="err">ERROR</span> ' + JSON.stringify(parsed.error)) : 'OK';
-            log('RESP id=' + id + ' → ' + status + ' <span style="color:#aaa">' + result + '</span>');
+            log('RESP id=' + id + ' → ' + status + ' <span style="color:#aaa">' + JSON.stringify(parsed) + '</span>');
             if (id === 1) {
                 if (parsed.error) ERR('CHAIN SWITCH REJECTED: ' + JSON.stringify(parsed.error));
                 else OK('STEP1 wallet_switchEthereumChain(0x89) ACCEPTED — no wallet confirmation shown, no rejection');
             } else if (id === 2) {
-                if (parsed.result === '0x89') OK('STEP2 eth_chainId = ' + parsed.result + ' → WALLET NOW RESOLVES POLYGON (137). Chain switch TERMINATED.');
-                else log('STEP2 eth_chainId = ' + parsed.result + ' (still old chain?)');
+                var cr = parsed.result;
+                if (cr === '0x89') OK('STEP2 eth_chainId = ' + cr + ' → WALLET NOW RESOLVES POLYGON (137). Chain switch TERMINATED.');
+                else log('STEP2 eth_chainId = ' + (cr === undefined ? JSON.stringify(parsed) : cr) + ' (still old chain?)');
             } else if (id === 3) {
                 log('STEP3 eth_blockNumber = ' + parsed.result);
-                if (parsed.result) OK('STEP3 wallet queried a live block number on the POST-SWITCH chain.');
+                if (parsed.result) OK('STEP3 wallet queried a live block number on the POST-SWITCH chain: 0x' + String(parseInt(parsed.result, 16)).trim() + ' dec');
             }
         } catch (e) {
             log('hook parse: ' + e.message + ' raw=' + result);

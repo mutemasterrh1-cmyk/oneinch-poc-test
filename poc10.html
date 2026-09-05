@@ -1,0 +1,29 @@
+<!doctype html><html><head><meta charset="utf-8"><title>poc10 popup</title>
+<script>
+function out(m){var d=document.createElement('div');d.textContent=m;document.body.appendChild(d);}
+function base(){
+  out('BASE ethereum='+(window.ethereum?'yes':'no')+' isOneInch='+(window.ethereum&&window.ethereum.isOneInchIOSWallet?'yes':'no'));
+}
+function go(){
+  var w;
+  try{ w=window.open('/oneinch-poc-test/popup2.html','_blank','width=400,height=500'); }
+  catch(e){ out('OPEN THROW '+e.message); return; }
+  out('open returned '+(w?'object':'null'));
+  if(!w){ return; }
+  var n=0;
+  var t=setInterval(function(){
+    n++;
+    var has=null;
+    try{ has=(typeof w.document!=='undefined'); }catch(e){}
+    var eth=null;
+    try{ eth=(w && w.ethereum)?'yes':'no'; }catch(e){ eth='no-access'; }
+    out('t'+n+' popup doc='+has+' ethereum='+eth);
+    if(n>=8||eth==='yes'){ clearInterval(t); }
+  },1500);
+}
+out('PROVIDER PRESENT: '+(window.ethereum?'YES':'NO'));
+window.ethereum && out('isOneInch='+window.ethereum.isOneInchIOSWallet+' keys='+Object.keys(window.ethereum).slice(0,6).join(','));
+base();
+document.write('<br><button id="b" style="font-size:40px;padding:30px">GO POPUP</button>');
+document.getElementById('b').onclick=go;
+</script></body></html>

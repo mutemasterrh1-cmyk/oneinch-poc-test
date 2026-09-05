@@ -1,0 +1,21 @@
+<!doctype html><html><head><meta charset="utf-8"><title>poc9e3</title>
+<script>
+let tries=0;
+function out(m){var d=document.createElement('div');d.textContent=m;document.body.appendChild(d);}
+async function tryAll(){
+  var w=window.OneInchSolanaWallet;
+  if(!w){out('NO WALLET OBJ tries='+tries++); if(tries<15){setTimeout(tryAll,1000);} return;}
+  var own=Object.getOwnPropertyNames(w);
+  out('OWN: '+own.join(','));
+  var proto=Object.getOwnPropertyNames(Object.getPrototypeOf(w));
+  out('PROTO: '+proto.join(','));
+  for(var i=0;i<proto.length;i++){
+    var n=proto[i]; var m=w[n];
+    if(typeof m==='function'){ out('FN '+n); }
+  }
+  ["connect","disconnect","request","signMessage","signTransaction","signAndSendTransaction","sendTransaction","getPublicKey"].forEach(function(n){
+    out('T '+n+' -> '+typeof w[n]);
+  });
+}
+setTimeout(tryAll,1200);
+</script></body></html>

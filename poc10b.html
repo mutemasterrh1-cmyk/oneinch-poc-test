@@ -1,0 +1,26 @@
+<!doctype html><html><head><meta charset="utf-8"><title>poc10b popup probe</title>
+<style>#b{height:260px;width:100%;font-size:64px;background:#cc0000;color:#fff}
+body,html{margin:0;padding:0}
+div{font-size:20px;padding:2px 6px;border-bottom:1px solid #eee}</style>
+</head><body>
+<button id="b" onclick="go()">OPEN</button>
+<script>
+function out(m){var d=document.createElement('div');d.textContent=m;document.body.appendChild(d);}
+function go(){
+  out('click ethereum='+(window.ethereum?'yes':'no'));
+  var w=null;
+  try{ w=window.open('/oneinch-poc-test/popup2b.html','pw','width=420,height=600'); }
+  catch(e){ out('OPEN THROW '+e.message); return; }
+  out('open returned '+(w?'object':'null'));
+  if(!w) return;
+  var n=0;
+  var t=setInterval(function(){
+    n++;
+    var txt='';
+    try{ txt=w.document.body ? w.document.body.innerText : ''; }catch(e){ txt='<denied>'; }
+    var slice=txt.split('\n').slice(0,8).join('|');
+    out('t'+n+' '+slice);
+    if(n>=14){ clearInterval(t); }
+  },1000);
+}
+</script></body></html>

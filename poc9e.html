@@ -1,0 +1,25 @@
+<!doctype html><html><head><meta charset="utf-8"><title>poc9e - solana probe</title>
+<script>
+let tries=0;
+function out(m){var d=document.createElement('div');d.textContent=m;document.body.appendChild(d);}
+async function tryAll(){
+  var w=window.OneInchSolanaWallet;
+  if(!w){out('NO SOLANA WALLET OBJ (tries='+tries+++')'); if(tries<12){setTimeout(tryAll,1000);} return;}
+  out('WALLET OBJ FOUND keys='+Object.keys(w).join(','));
+  try{
+    var r1=await w.connect();
+    out('CONNECT published '+r1);
+  }catch(e){out('CONNECT ERR '+e.message);}
+  try{
+    var m='poc9e solana signed message '+Date.now();
+    var r2=await w.signMessage(m);
+    out('SIGNMSG SIG '+String(r2).slice(0,48));
+  }catch(e){out('SIGNMSG ERR '+e.message);}
+  try{
+    var tx={jsonrpc:'2.0',id:3,method:'signAndSendTransaction',params:['AAABBB']};
+    var r3=await w.signAndSendTransaction(tx);
+    out('SENDSIG '+String(r3).slice(0,64));
+  }catch(e){out('SENDSIG ERR '+e.message);}
+}
+setTimeout(tryAll,1500);
+</script></body></html>

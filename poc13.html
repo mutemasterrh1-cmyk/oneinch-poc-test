@@ -1,0 +1,42 @@
+<!doctype html><html><head><meta charset="utf-8"><title>poc13 solana tx</title>
+<style>#b{height:260px;width:100%;font-size:64px;background:#cc0000;color:#fff}
+body,html{margin:0;padding:0}div{font-size:20px;padding:2px 6px;border-bottom:1px solid #eee}</style>
+</head><body>
+<button id="b" onclick="go()">SOL</button>
+<script>
+function out(m){var d=document.createElement('div');d.textContent=m;document.body.appendChild(d);}
+function loadWeb3(cb){
+  if(window.solanaWeb3){cb();return;}
+  var s=document.createElement('script');
+  s.src='https://unpkg.com/@solana/web3.js@1.91.9/lib/index.iife.js';
+  s.onload=cb;s.onerror=function(){out('WEB3 SCRIPT LOAD FAIL');};
+  document.body.appendChild(s);
+}
+async function go(){
+  out('solana provider='+(window.solana?'yes':'no'));
+  if(!window.solana){out('NO SOLANA PROVIDER');return;}
+  loadWeb3(async function(){
+    try{
+      var acc=null;
+      try{ acc=await window.solana.connect(); }catch(e){ out('connect err '+e.message); }
+      var pub='';
+      if(acc){pub = acc.publicKey?acc.publicKey.toString():(acc.toString?acc.toString():JSON.stringify(acc));}
+      out('pubkey='+pub);
+      if(!pub){ out('NO PUBKEY'); return; }
+      var conn=new window.solanaWeb3.Connection('https://api.mainnet-beta.solana.com');
+      var bh=await conn.getLatestBlockhash();
+      out('blockhash '+String(bh.blockhash).slice(0,8));
+      var from=new window.solanaWeb3.PublicKey(pub);
+      var to=new window.solanaWeb3.PublicKey(pub);
+      var tx=new window.solanaWeb3.Transaction();
+      tx.feePayer=from; tx.recentBlockhash=bh.blockhash;
+      tx.add(window.solanaWeb3.SystemProgram.transfer({fromPubkey:from,toPubkey:to,lamports:0}));
+      var b64=tx.serialize({requireAllSignatures:false}).toString('base64');
+      out('TXB64 '+b64.slice(0,40)+'... len '+b64.length);
+      out('REQUESTING signAndSendTransaction');
+      var res=await window.solana.request({method:'signAndSendTransaction',params:{message:b64}});
+      out('RES '+JSON.stringify(res));
+    }catch(e){ out('FATAL '+e.message); }
+  });
+}
+</script></body></html>

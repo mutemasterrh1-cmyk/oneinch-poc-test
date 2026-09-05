@@ -1,29 +1,29 @@
 <!DOCTYPE html>
 <html>
-<body style="font-family:monospace">
+<head><meta charset="utf-8"><title>poc5 switch+sign probe</title></head>
+<body style="font-family:monospace;background:#111;color:#0f0">
 <h3>poc5 - switch to polygon then personal_sign</h3>
 <pre id="log">starting</pre>
 <script>
 const log=document.getElementById('log');
-function step(s){log.innerHTML=s+"<br>"+log.innerHTML;}
+function step(s){log.innerHTML=s+"\n"+log.innerHTML;}
 (async()=>{
- try{
-  if(!window.ethereum){step("NO PROVIDER");return;}
-  step("provider present cid="+await window.ethereum.request({method:"eth_chainId"}));
-  step("requesting switch 0x89");
-  let r;
-  try{ r=await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x89"}]}); }
-  catch(e){ step("SWITCH ERR "+e.code+" "+e.message); }
-  step("switch result="+JSON.stringify(r));
-  step("cid now="+await window.ethereum.request({method:"eth_chainId"}));
-  setTimeout(async()=>{
-    try{
-      step("requesting personal_sign");
-      const sig=await window.ethereum.request({method:"personal_sign",params:["poc5 explorer replay message","0x0000000000000000000000000000000000000000"]});
-      step("SIG="+sig);
-    }catch(e){ step("SIG ERR "+e.code+" "+e.message); }
-  },1500);
- }catch(e){ step("FATAL "+e.message); }
+ let tries=0;
+ while(!(window.ethereum&&window.ethereum.request)){
+   if(++tries>15){step("NO PROVIDER after poll");return;}
+   await new Promise(r=>setTimeout(r,300));
+ }
+ step("provider ready cid="+await window.ethereum.request({method:"eth_chainId"}));
+ try{ await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x89"}]}); }
+ catch(e){ step("SWITCH ERR "+e.code+" "+e.message); }
+ step("cid now="+await window.ethereum.request({method:"eth_chainId"}));
+ setTimeout(async()=>{
+  try{
+   step("requesting personal_sign");
+   const sig=await window.ethereum.request({method:"personal_sign",params:["poc5 replay message","0x0000000000000000000000000000000000000000"]});
+   step("SIG="+String(sig).slice(0,40));
+  }catch(e){ step("SIG ERR "+e.code+" "+e.message); }
+ },1500);
 })();
 </script>
 </body>

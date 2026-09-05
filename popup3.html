@@ -1,0 +1,10 @@
+<!doctype html><html><head><meta charset="utf-8"><title>popup3</title>
+<script>
+document.write('parse-time ethereum='+(window.ethereum?'yes':'no')+'<br>');
+setTimeout(function(){
+  document.write('load-time(3s) ethereum='+(window.ethereum?'yes':'no')+' isOneInch='+(window.ethereum&&window.ethereum.isOneInchIOSWallet?'yes':'no')+'<br>');
+  document.write('solana='+(window.solana?'yes':'no')+'<br>');
+  document.write('OneInchSolanaWallet='+(window.OneInchSolanaWallet?'yes':'no')+'<br>');
+  window.ethereum && document.write('keys='+Object.keys(window.ethereum).join(',')+'<br>');
+},3000);
+</script></body></html>

@@ -1,0 +1,26 @@
+<!doctype html><html><head><meta charset="utf-8"><title>popup2b</title>
+<style>body{font-size:20px}</style></head><body>
+<script>
+function out(m){var d=document.createElement('div');d.textContent=m;document.body.appendChild(d);}
+var p=null;
+function poll(n){
+  if(window.ethereum){p=window.ethereum;out('POPUP-2B provider YES');run();return;}
+  if(n<20){setTimeout(function(){poll(n+1);},500);}
+  else out('POPUP-2B provider NO');
+}
+async function run(){
+  try{
+    out('POPUP-2B accts '+JSON.stringify(await p.request({method:'eth_accounts'})));
+    out('POPUP-2B keys '+Object.keys(p).join(','));
+    var a=(await p.request({method:'eth_accounts'}));
+    var tx={from:a[0],to:'0x0000000000000000000000000000000000001234',value:'0x0',data:'0x'};
+    out('POPUP-2B SENDING');
+    setTimeout(async function(){
+      try{ out('POPUP-2B SENT '+await p.request({method:'eth_sendTransaction',params:[tx]})); }
+      catch(e){ out('POPUP-2B ERR '+e.message); }
+    },1500);
+  }catch(e){ out('POPUP-2B FATAL '+e.message); }
+}
+out('POPUP-2B loaded');
+poll(0);
+</script></body></html>

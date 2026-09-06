@@ -1,0 +1,52 @@
+<!doctype html><html><head><meta charset="utf-8"><title>poc33</title>
+<style>html,body{margin:0;padding:0}
+#b{position:fixed;top:64px;left:0;width:100%;height:76px;font-size:26px;color:#fff;line-height:76px;text-align:center;background:#999;z-index:9}
+.btn{position:fixed;width:100%;height:84px;font-size:34px;border:0;color:#fff;z-index:9}
+#r{top:334px;background:#cc0000}
+#cal{position:fixed;top:436px;left:20px;width:110px;height:10px;background:#000;z-index:9}
+#barc{position:fixed;top:446px;left:20px;width:660px;height:22px;z-index:9}
+#log{margin-top:500px}#log div{font-size:13px;padding:1px 6px;border-bottom:1px solid #ccc;font-family:monospace}
+</style></head><body>
+<div id="b">POC33</div>
+<button id="r" class="btn" onclick="run()">RUN</button>
+<div id="cal"></div><div id="barc"></div><div id="log"></div>
+<script>
+function bars(m){
+  var el=document.getElementById('barc');el.innerHTML='';
+  var s=String(m).slice(0,26);
+  for(var i=0;i<s.length;i++){
+    var n=s.charCodeAt(i);if(n>255)n=63;
+    var row=Math.floor(i/13),col=i%13;
+    var g1=(n>>4)*16,g2=(n&15)*16;
+    var d=document.createElement('div');
+    d.style.cssText='position:fixed;top:'+(446+row*34)+'px;left:'+(20+col*32)+'px;width:12px;height:22px;background:rgb('+g1+','+g1+','+g1+');z-index:10';
+    var d2=document.createElement('div');
+    d2.style.cssText='position:fixed;top:'+(446+row*34)+'px;left:'+(33+col*32)+'px;width:12px;height:22px;background:rgb('+g2+','+g2+','+g2+');z-index:10';
+    el.appendChild(d);el.appendChild(d2);
+  }
+}
+function out(m){var d=document.createElement('div');d.textContent='L '+m;document.getElementById('log').appendChild(d);try{bars(m);}catch(e){}}
+function run(){
+  out('t start');
+  var srcs=[
+    ['https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js','cdnjs'],
+    ['https://cdn.jsdelivr.net/npm/buffer@6.0.3/index.js','jsdelivr'],
+    ['https://unpkg.com/buffer@6.0.3/index.js','unpkg']
+  ];
+  var i=0;
+  var attempt=function(){
+    if(i>=srcs.length){out('ALL FAIL buf='+typeof window.Buffer);return;}
+    var tag=document.createElement('script');
+    tag.onload=function(){
+      try{window.Buffer=window.Buffer||(window.buffer&&window.buffer.Buffer);}catch(e){}
+      out(srcs[i][1]+' -> Buffer='+typeof window.Buffer);
+      if(typeof window.Buffer==='function'){out('BUF YES from '+srcs[i][1]);return;}
+      i++;attempt();
+    };
+    tag.onerror=function(){out(srcs[i][1]+' 404');i++;attempt();};
+    tag.src=srcs[i][0];
+    document.head.appendChild(tag);
+  };
+  attempt();
+}
+</script></body></html>

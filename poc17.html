@@ -1,0 +1,74 @@
+<!doctype html><html><head><meta charset="utf-8"><title>poc17</title>
+<style>body,html{margin:0;padding:0}
+#b{width:100%;height:90px;font-size:30px;color:#fff;line-height:90px;text-align:center;background:#999}
+.cell{display:inline-block;width:118px;height:60px;font-size:14px;color:#fff;line-height:60px;text-align:center}
+.btn{width:100%;height:90px;font-size:34px;border:0;color:#fff}
+div{font-size:12px;padding:1px 4px;border-bottom:1px solid #ccc}</style>
+</head><body>
+<div id="b">POC17</div>
+<div><div id="c0" class="cell">sol</div><div id="c1" class="cell">ctor</div><div id="c2" class="cell">brS</div><div id="c3" class="cell">brE</div><div id="c4" class="cell">web3</div><div id="c5" class="cell">pk</div></div>
+<button id="i" style="background:#0088ff" class="btn" onclick="doInit()">INIT</button>
+<button id="r" style="background:#cc0000" class="btn" onclick="run()">RUN</button>
+<div id="log"></div>
+<script>
+var FLAG='#999';
+function set(c){FLAG=c;document.getElementById('b').style.background=c;}
+function peek(k){try{return !!window[k];}catch(e){return false;}}
+function cell(el,on){document.getElementById(el).style.background=on?'#00cc00':'#990000';}
+function refresh(){
+  cell('c0',peek('solana'));cell('c1',peek('OneInchSolanaWallet'));cell('c2',peek('proxyJsBridgeSol'));
+  cell('c3',peek('proxyJsBridge'));cell('c4',peek('solanaWeb3'));
+  var pk=false;try{pk=!!(window.solana&&window.solana.publicKey);}catch(e){}
+  cell('c5',pk);
+}
+function out(m){var d=document.createElement('div');d.textContent=m;document.getElementById('log').appendChild(d);}
+function to(p,ms){return new Promise(function(res,rej){var t=setTimeout(function(){rej(new Error('TO'));},ms);p.then(function(v){clearTimeout(t);res(v);},function(e){clearTimeout(t);rej(e);});});}
+function loadWeb3(cb){
+  if(peek('solanaWeb3')){refresh();cb();return;}
+  var s=document.createElement('script');
+  s.src='https://unpkg.com/@solana/web3.js@1.91.9/lib/index.iife.js';
+  s.onload=function(){refresh();cb();};
+  s.onerror=function(){set('#000000');out('web3 fail');};
+  document.body.appendChild(s);
+}
+async function run(){
+  var p=window.solana;
+  if(!p){refresh();return;}
+  var pk=null;
+  try{pk=p.publicKey?p.publicKey.toString():null;}catch(e){}
+  if(!pk){
+    try{var r=await to(p.request({method:'connect'}),4000);pk=r&&r.publicKey?String(r.publicKey):null;out('cnct '+(pk?'ok':'null'));}
+    catch(e){out('cnct '+e.message);}
+  }
+  if(!pk){pk='11111111111111111111111111111111';out('dummy');}
+  refresh();
+  loadWeb3(async function(){
+    try{
+      set('#0000aa');
+      var S=window.solanaWeb3;
+      var from=new S.PublicKey(pk);
+      var conn=new S.Connection('https://api.mainnet-beta.solana.com');
+      var bh;
+      try{bh=await to(conn.getLatestBlockhash(),15000);}catch(e){out('bh '+e.message);bh={blockhash:'11111111111111111111111111111111'};}
+      set('#ffff00');
+      var tx=new S.Transaction();
+      tx.feePayer=from; tx.recentBlockhash=bh.blockhash;
+      tx.add(S.SystemProgram.transfer({fromPubkey:from,toPubkey:new S.PublicKey('11111111111111111111111111111111'),lamports:1}));
+      var b64=tx.serialize({requireAllSignatures:false}).toString('base64');
+      out('b64 '+b64.length);
+      set('#ff00ff');
+      var done=false;
+      setTimeout(function(){if(!done)set('#ff00ff');},20000);
+      try{ var res=await p.request({method:'signAndSendTransaction',params:{message:b64}}); done=true; set('#000000'); out('RES '+String(res).slice(0,60)); }
+      catch(e){ done=true; set('#ff0000'); out('ERR '+e.message); }
+    }catch(e){ set('#ff0000'); out('FATAL '+e.message); }
+  });
+}
+function doInit(){
+  if(peek('OneInchSolanaWallet')){try{window.OneInchSolanaWallet.init('ios',window.proxyJsBridgeSol,true);out('init ok');}catch(e){out('init '+e.message);}}
+  setTimeout(refresh,1500);setTimeout(refresh,4000);
+}
+refresh();
+setTimeout(refresh,3000);
+setTimeout(refresh,6000);
+</script></body></html>

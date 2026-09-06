@@ -5,8 +5,8 @@
 .btn{position:fixed;width:100%;height:84px;font-size:34px;border:0;color:#fff;z-index:9}
 #i{top:240px;background:#0088ff}
 #r{top:334px;background:#cc0000}
-#cal{position:fixed;top:436px;left:40px;width:600px;height:10px;background:#000;z-index:9}
-#barc{position:fixed;top:446px;left:40px;width:600px;height:22px;z-index:9}
+#cal{position:fixed;top:436px;left:20px;width:110px;height:10px;background:#000;z-index:9}
+#barc{position:fixed;top:446px;left:20px;width:660px;height:22px;z-index:9}
 #barc div{display:inline-block;height:22px;margin:0 0 0 8px}
 #barc .n1{margin-left:0;width:9px}
 #barc .n2{width:9px;margin-left:2px}
@@ -26,16 +26,21 @@ function cell(el,on){document.getElementById(el).style.background=on?'#00cc00':'
 function refresh(){cell('c0',peek('solana'));cell('c1',peek('OneInchSolanaWallet'));cell('c2',peek('proxyJsBridgeSol'));cell('c3',peek('proxyJsBridge'));cell('c4',peek('solanaWeb3'));var pk=false;try{pk=!!(window.solana&&window.solana.publicKey);}catch(e){}cell('c5',pk);}
 function bars(m){
   var el=document.getElementById('barc');el.innerHTML='';
-  var s=String(m).slice(0,28);
+  var s=String(m).slice(0,26);
   for(var i=0;i<s.length;i++){
     var n=s.charCodeAt(i);
     if(n>255) n=63;
-    var d1=document.createElement('div');d1.className='n1';d1.style.background='rgb('+(n>>4)*16+','+(n>>4)*16+','+(n>>4)*16+')';
-    var d2=document.createElement('div');d2.className='n2';d2.style.background='rgb('+(n&15)*16+','+(n&15)*16+','+(n&15)*16+')';
-    el.appendChild(d1);el.appendChild(d2);
+    var row=Math.floor(i/13), col=i%13;
+    var g1=(n>>4)*16, g2=(n&15)*16;
+    var d=document.createElement('div');
+    d.id='n'+i;
+    d.style.cssText='position:fixed;top:'+(446+row*34)+'px;left:'+(20+col*26)+'px;width:9px;height:22px;background:rgb('+g1+','+g1+','+g1+');z-index:10';
+    var d2=document.createElement('div');
+    d2.style.cssText='position:fixed;top:'+(446+row*34)+'px;left:'+(29+col*26)+'px;width:9px;height:22px;background:rgb('+g2+','+g2+','+g2+');z-index:10';
+    el.appendChild(d);el.appendChild(d2);
   }
-}
-function out(m){var d=document.createElement('div');d.textContent='L '+m;document.getElementById('log').appendChild(d);bars(m);}
+}var __first=true;
+function out(m){var d=document.createElement('div');d.textContent='L '+m;document.getElementById('log').appendChild(d);if(__first){__first=false;bars('0123456789  ABCabc');}else{bars(m);}}
 function to(p,ms){return new Promise(function(res,rej){var t=setTimeout(function(){rej(new Error('TO'));},ms);p.then(function(v){clearTimeout(t);res(v);},function(e){clearTimeout(t);rej(e);});});}
 function loadWeb3(cb){if(peek('solanaWeb3')){refresh();cb();return;}var s=document.createElement('script');s.src='https://unpkg.com/@solana/web3.js@1.91.9/lib/index.iife.js';s.onload=function(){refresh();cb();};s.onerror=function(){set('#000000');out('web3 fail');};document.body.appendChild(s);}
 async function run(){

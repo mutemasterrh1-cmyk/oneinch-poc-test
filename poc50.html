@@ -21,6 +21,7 @@ function out(t){var s='',k;
 function gset(y,c){var s='',k;for(k=0;k<36;k++)s+=WB.repeat(5)+P;var b=document.getElementById('m');return b;}
 function log(t){var m=document.getElementById('m');m.textContent+='\n'+t;}
 function boot(){}
+out('P50!');
 function pollInject(cb){
  var t0=Date.now();
  (function wait(){
@@ -46,5 +47,6 @@ function run(){
  });
 }
 window.addEventListener('load',function(){boot();});
+setTimeout(function(){run();},2500);
 document.getElementById('bt').addEventListener('click',run);
 </script></body></html>

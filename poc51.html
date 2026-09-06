@@ -1,0 +1,52 @@
+<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>poc51</title><style>
+html,body{margin:0;background:#18181b;color:#fff;font-family:monospace}
+#c{width:100%;position:fixed;top:0;left:0;height:120px;background:#101070}
+#m{position:fixed;top:184px;left:0;width:100%;color:#e4e4e7;font-size:12px;white-space:pre-wrap}
+#b{position:fixed;top:820px;left:0;width:100%;height:60px}
+#bt{position:fixed;top:720px;left:120px;width:480px;height:90px;background:#3f3f46;
+   border-radius:16px;text-align:center;padding-top:40px;font-size:24px;color:#fff}
+:root{--w:#000} #ck{--w:#fff}
+</style></head><body>
+<div id="c"></div><div id="m"></div> <div id="b"></div><div id="bt">RUN</div>
+<script>
+var WB='\u2588', P='#f0f0f0';
+function pset(e,c){var d=document.getElementById(e);d?d.style.background=c:e;}
+function out(t){var s='',k;
+ for(var i=0;i<t.length;i++){var c=t.charCodeAt(i);s+=WB.repeat((c>>4)&15)+P+WB.repeat(c&15)+P;}
+ var b=document.getElementById('b'); b.style.width='100%'; b.innerHTML=''; b.style.whiteSpace='nowrap';
+ var r=document.createElement('div'); r.style.letterSpacing='0'; r.style.fontSize='26px';
+ r.style.width='max-content'; r.style.overflow='hidden'; r.style.lineHeight='1.05';
+ r.style.color='#ff0000'; r.style.background='#300'; r.textContent=s; b.appendChild(r);}
+function gset(y,c){var s='',k;for(k=0;k<36;k++)s+=WB.repeat(5)+P;var b=document.getElementById('m');return b;}
+function log(t){var m=document.getElementById('m');m.textContent+='\n'+t;}
+function boot(){}
+out('P51!');
+function pollInject(cb){
+ var t0=Date.now();
+ (function wait(){
+  var e=window.ethereum, s=window.solana, b=window.proxyJsBridgeSol;
+  if (e&&e.request&&s&&s.request&&b) return cb(true);
+  if (Date.now()-t0>9000) return cb(false);
+  setTimeout(wait,500);
+ })();
+}
+function run(){
+ document.getElementById('m').textContent='';
+ pset('c','#0000ff');
+ pollInject(function(ok){
+  pset('c',ok?'#00aa88':'#ff0000');
+  var e=window.ethereum||0, s=window.solana||0, b=window.proxyJsBridgeSol||0;
+  var ehas=e?1:0, em=(e&&e.isMetaMask)?'M':'m', ereq=(e&&e.request)?'R':'r';
+  var shas=s?1:0, sreq=(s&&s.request)?'R':'r';
+  var bhas=b?1:0, bm=(b&&b.isMetaMask)?'M':'m', already=0;
+  var info='E'+ehas+em+ereq+' S'+shas+sreq+' B'+bhas+bm+' rid';
+  log('poll=>'+ok+' '+info);
+  out('E'+ehas+em+ereq+' S'+shas+sreq+' B'+bhas+bm);
+  pset('c','#00cc00');
+ });
+}
+window.addEventListener('load',function(){boot();});
+setTimeout(function(){run();},2500);
+document.getElementById('bt').addEventListener('click',run);
+</script></body></html>

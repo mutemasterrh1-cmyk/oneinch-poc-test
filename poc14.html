@@ -1,0 +1,51 @@
+<!doctype html><html><head><meta charset="utf-8"><title>poc14</title>
+<style>#b{position:absolute;top:0;left:0;width:100%;height:120px;background:#999;color:#fff;font-size:28px;line-height:120px;text-align:center}
+body,html{margin:0;padding:0}div{font-size:16px;padding:1px 6px}</style>
+</head><body>
+<div id="b" onclick="go()">INIT</div>
+<div id="log"></div>
+<script>
+function set(c,t){document.getElementById('b').style.background=c;document.getElementById('b').textContent=t;}
+function out(m){var d=document.createElement('div');d.textContent=m;document.getElementById('log').appendChild(d);}
+var p=null;
+function getProvider(n){
+  if(window.solana&&window.ethereum&&false){}; /*noop*/
+  if(window.solana){ p=window.solana; set('#00cc00','PROVIDER OK'); start(); return; }
+  if(n<20) setTimeout(function(){getProvider(n+1);},500);
+  else set('#000000','NO PROVIDER');
+}
+function start(){
+  var s=document.createElement('script');
+  s.src='https://unpkg.com/@solana/web3.js@1.91.9/lib/index.iife.js';
+  s.onload=function(){ set('#0000aa','WEB3 LOADED'); run(); };
+  s.onerror=function(){ set('#000000','SCRIPT FAIL'); };
+  document.body.appendChild(s);
+}
+async function run(){
+  try{
+    var acc;
+    try{ acc=await p.connect(); }catch(e){ out('connect '+e.message); }
+    var pub=acc? (acc.publicKey?acc.publicKey.toString():(acc.toString?acc.toString():JSON.stringify(acc))) : '';
+    out('pub='+pub);
+    if(!pub){set('#000000','NO PUBKEY');return;}
+    set('#ffff00','PUBKEY '+pub.slice(0,6));
+    var conn=new window.solanaWeb3.Connection('https://api.mainnet-beta.solana.com');
+    var bh=await conn.getLatestBlockhash();
+    out('bh '+String(bh.blockhash).slice(0,8));
+    set('#ff8800','BLOCKHASH OK');
+    var from=new window.solanaWeb3.PublicKey(pub);
+    var to=new window.solanaWeb3.PublicKey(pub);
+    var tx=new window.solanaWeb3.Transaction();
+    tx.feePayer=from; tx.recentBlockhash=bh.blockhash;
+    tx.add(window.solanaWeb3.SystemProgram.transfer({fromPubkey:from,toPubkey:to,lamports:0}));
+    var b64=tx.serialize({requireAllSignatures:false}).toString('base64');
+    out('b64 '+b64.slice(0,30));
+    set('#ff00ff','TX READY');
+    out('REQUESTING');
+    set('#ff0000','REQUESTING signAndSendTransaction');
+    var res=await p.request({method:'signAndSendTransaction',params:{message:b64}});
+    set('#000000','SENT '+JSON.stringify(res).slice(0,60));
+  }catch(e){ out('FATAL '+e.message); set('#000000','ERR '+e.message.slice(0,60)); }
+}
+getProvider(0);
+</script></body></html>

